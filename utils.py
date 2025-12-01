@@ -94,3 +94,41 @@ def resample_weekly(df: pd.DataFrame) -> pd.DataFrame:
             "Volume": r["Volume"].sum(),
         }
     ).dropna()
+
+
+def resample_monthly(df: pd.DataFrame) -> pd.DataFrame:
+    """일봉 → 월봉 변환 (월말 기준).
+
+    Args:
+        df: OHLCV 컬럼을 가진 일봉 DataFrame
+
+    Returns:
+        월봉 DataFrame
+    """
+    r = df.resample("M")
+    return pd.DataFrame(
+        {
+            "Open": r["Open"].first(),
+            "High": r["High"].max(),
+            "Low": r["Low"].min(),
+            "Close": r["Close"].last(),
+            "Volume": r["Volume"].sum(),
+        }
+    ).dropna()
+
+
+def filter_period(df: pd.DataFrame, years: int = 1) -> pd.DataFrame:
+    """최근 N년 데이터만 필터링.
+
+    Args:
+        df: DatetimeIndex를 가진 DataFrame
+        years: 필터링할 연도 수
+
+    Returns:
+        필터링된 DataFrame
+    """
+    if df.empty:
+        return df
+    last_date = df.index.max()
+    start_date = last_date - pd.DateOffset(years=years)
+    return df[df.index >= start_date]

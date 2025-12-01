@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
-from utils import resample_weekly, to_code
+from utils import resample_monthly, resample_weekly, to_code
 
 from pykrx import stock
 
@@ -21,8 +21,12 @@ def fetch_ohlcv(
         query: 종목명 또는 코드
         start: 시작일 (YYYYMMDD 또는 YYYY-MM-DD)
         end: 종료일
-        period: 'daily' 또는 'weekly'
-        adjusted: True=수정주가, False=일반주가
+        period: 'daily', 'weekly', 'monthly'
+        adjusted: True=수정주가(네이버), False=일반주가(KRX)
+
+    Note:
+        pykrx의 수정주가는 액면분할만 반영하며,
+        yfinance와 달리 배당 재투자는 미반영됩니다.
 
     Returns:
         (DataFrame, 종목코드) 또는 (None, None)
@@ -46,7 +50,7 @@ def fetch_ohlcv(
     else:
         end = end_dt.strftime("%Y%m%d")
 
-    # pykrx로 데이터 조회 (수정주가 옵션)
+    # pykrx로 데이터 조회
     df = stock.get_market_ohlcv_by_date(start, end, code, adjusted=adjusted)
 
     if df.empty:
@@ -70,8 +74,35 @@ def fetch_ohlcv(
         print(f"[오류] '{query}'({code}) 유효 데이터 없음")
         return None, None
 
-    # 주봉 변환
+    # 리샘플링
     if period == "weekly":
         df = resample_weekly(df)
+    elif period == "monthly":
+        df = resample_monthly(df)
+    # period == "daily"면 그대로 반환
 
     return df, code
+
+
+def fetch_multi_period(
+    query: str, start: str | None = None, end: str | None = None, adjusted: bool = True
+) -> dict | None:
+    """일봉/주봉/월봉 데이터 동시 조회.
+
+    Args:
+        query: 종목명 또는 코드
+        start: 시작일
+        end: 종료일
+        adjusted: 수정주가 여부
+
+    Returns:
+        {"daily": df, "weekly": df, "monthly": df, "code": str} 또는 None
+    """
+    daily, code = fetch_ohlcv(query, start, end, period="daily", adjusted=adjusted)
+    if daily is None:
+        return None
+
+    weekly = resample_weekly(daily)
+    monthly = resample_monthly(daily)
+
+    return {"daily": daily, "weekly": weekly, "monthly": monthly, "code": code}

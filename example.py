@@ -3,7 +3,7 @@
 실행: python example.py
 """
 
-from init import analyze
+from init import analyze_full
 
 # === 단일 종목 분석 ===
 # 종목명 또는 6자리 코드 모두 사용 가능
@@ -11,7 +11,7 @@ from init import analyze
 
 # 날짜 범위 지정
 # result = analyze("005930", start="2023-01-01", end="2025-12-31")
-result = analyze("005930", start="2023-01-01", adjusted=False)
+result = analyze_full("005930", start="2023-01-01", adjusted=False)
 
 # # 파라미터 조정 (MA 20주, CMF 6주)
 # result = analyze("SK하이닉스", ma_period=20, cmf_period=6)
